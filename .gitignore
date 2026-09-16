@@ -1,0 +1,9 @@
+node_modules
+.next
+work
+outputs
+*.tsbuildinfo
+data/bronze
+*.duckdb
+data/silver/waiver_snapshots.parquet.tmp
+data/silver/waiver_snapshots.parquet.new
