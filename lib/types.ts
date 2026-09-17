@@ -75,6 +75,19 @@ export type WeekOption = {
   unlocksAt: string | null;
 };
 
+export type WeeklySummaryRow = {
+  player: Player;
+  season: number;
+  week: number;
+  opponent: string | null;
+  rosteredPct: number | null;
+  rosteredChangePct: number | null;
+  startedPct: number | null;
+  startedChangePct: number | null;
+  adds: number | null;
+  drops: number | null;
+};
+
 export type WeeklyMarket = {
   season: number;
   week: number;

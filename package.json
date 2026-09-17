@@ -12,6 +12,7 @@
     "prepare:nflverse": "tsx scripts/prepareNflverseData.ts",
     "update:nfl-stats": "tsx scripts/prepareNflverseData.ts",
     "capture:waivers": "tsx scripts/captureWaiverSnapshot.ts",
+    "capture:fantasy-ownership": "tsx scripts/captureFantasyOwnership.ts",
     "validate:waivers": "tsx scripts/validateWaiverCoverage.ts",
     "validate:metrics": "tsx scripts/validateMetrics.ts"
   },

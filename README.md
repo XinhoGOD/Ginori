@@ -27,6 +27,14 @@ La ficha consulta stats por GSIS y snap counts por PFR cuando el crosswalk los r
 
 La ventana de mercado semanal empieza el martes y termina en el kickoff real del partido del jugador. El movimiento ADP es `ADP inicial - ADP pregame`, por lo que un valor positivo significa mejora. Adds y drops no se suman: se toma el último snapshot 24H observado dentro de esa ventana y se conserva como observación de una ventana móvil. Las semanas futuras se habilitan automáticamente tres días antes de su primer kickoff.
 
+El dashboard `Summary` es deliberadamente de una sola semana: muestra únicamente TEs con `Rostered %` entre 80 y 89, movimiento de Adds/Drops y cambio de `Started %`. La tabla no mezcla filas históricas. `Rostered %` y `Started %` se capturan desde el endpoint público de ESPN Fantasy; `Rostered Change %` y `Started Change %` son la diferencia entre el último snapshot de la semana elegida y el último snapshot de la semana anterior. Ejecuta `npm run capture:fantasy-ownership` semanalmente para que esas variaciones existan de forma auditable. Si no hay snapshot de la semana anterior, el cambio es nulo y el jugador no se fuerza a aparecer.
+
+```bash
+npm run capture:fantasy-ownership
+```
+
+La captura conserva la respuesta cruda en `data/bronze/fantasy-ownership/` y agrega `data/silver/fantasy_ownership_snapshots.parquet`. ESPN sí entrega ambos porcentajes en su contexto global de Fantasy; el repositorio ADP original y nflverse no los incluyen.
+
 ## Sleeper capture
 
 ```bash
@@ -61,6 +69,7 @@ Important files:
 - `lib/data/metrics.ts` — ADP movement, ratios, velocity, acceleration and signals.
 - `lib/sleeper/` — timeout/retry-aware Sleeper client and trending fetches.
 - `scripts/captureWaiverSnapshot.ts` — raw preservation and append-only capture.
+- `scripts/captureFantasyOwnership.ts` — snapshots semanales de Rostered/Started.
 - `config/signals.ts` — todos los umbrales configurables.
 - `lib/data/phase2.ts` — calendario semanal, ADP pregame, historial de hasta 30 partidos, temporada anterior, historial contra rival y defensa vs posición.
 - `lib/data/marketInsights.ts` — relaciones determinísticas entre uso/producción y movimiento Fantasy.

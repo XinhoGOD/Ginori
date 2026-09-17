@@ -64,6 +64,12 @@ export async function openAnalyticsConnection() {
   );
   await createSourceView(
     conn,
+    "fantasy_ownership_snapshots",
+    "fantasy_ownership_snapshots.parquet",
+    "SELECT CAST(NULL AS TIMESTAMP) AS captured_at, CAST(NULL AS INTEGER) AS season, CAST(NULL AS INTEGER) AS week, CAST(NULL AS VARCHAR) AS espn_id, CAST(NULL AS DOUBLE) AS rostered_pct, CAST(NULL AS DOUBLE) AS started_pct WHERE false",
+  );
+  await createSourceView(
+    conn,
     "sleeper_players",
     "sleeper_players.parquet",
     "SELECT CAST(NULL AS VARCHAR) AS player_id, CAST(NULL AS VARCHAR) AS full_name, CAST(NULL AS VARCHAR) AS team, CAST(NULL AS VARCHAR) AS position, CAST(NULL AS VARCHAR) AS espn_id, CAST(NULL AS BOOLEAN) AS active WHERE false",

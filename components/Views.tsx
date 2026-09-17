@@ -13,6 +13,7 @@ import type {
   StatGame,
   StatLine,
   WeekOption,
+  WeeklySummaryRow,
 } from "../lib/types";
 
 type ClientCacheEntry = { value: unknown; expiresAt: number };
@@ -415,41 +416,17 @@ function useRows(url: string) {
   return { rows, loading };
 }
 
-type WeeklyRow = Pick<PlayerProfile, "player" | "metrics" | "phase2">;
-
-function recentPrimary(row: WeeklyRow) {
-  const games = row.phase2.recentStats;
-  const key =
-    row.player.position === "QB"
-      ? "passingYards"
-      : row.player.position === "RB"
-        ? "rushingYards"
-        : "targets";
-  const label =
-    row.player.position === "QB"
-      ? "Yardas pase"
-      : row.player.position === "RB"
-        ? "Yardas terrestres"
-        : "Targets";
-  const values = games
-    .map((game) => game[key])
-    .filter((value): value is number => value !== null && value !== undefined);
-  return values.length
-    ? `${label} ${values.map((value) => statNumber(value)).join(" → ")}`
-    : "Stats recientes no disponibles";
-}
-
 function WeeklyDashboardSection() {
   const [weeks, setWeeks] = useState<WeekOption[]>([]);
   const [week, setWeek] = useState<number | undefined>();
-  const [rows, setRows] = useState<WeeklyRow[]>([]);
+  const [rows, setRows] = useState<WeeklySummaryRow[]>([]);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     getJson<{ weeks: WeekOption[] }>("/api/weeks", controller.signal)
       .then((body) => {
         setWeeks(body.weeks ?? []);
-        setWeek(body.weeks.find((item) => item.current)?.week ?? 1);
+        setWeek(body.weeks.find((item) => item.current && !item.locked)?.week ?? 1);
       })
       .catch((error: unknown) => { if (!(error instanceof DOMException && error.name === "AbortError")) setWeeks([]); });
     return () => controller.abort();
@@ -458,7 +435,7 @@ function WeeklyDashboardSection() {
     if (week === undefined) return;
     const controller = new AbortController();
     setLoading(true);
-    getJson<{ rows: WeeklyRow[] }>(`/api/weekly?week=${week}`, controller.signal)
+    getJson<{ rows: WeeklySummaryRow[] }>(`/api/weekly?week=${week}`, controller.signal)
       .then((body) => setRows(body.rows ?? []))
       .catch((error: unknown) => { if (!(error instanceof DOMException && error.name === "AbortError")) setRows([]); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
@@ -467,59 +444,49 @@ function WeeklyDashboardSection() {
   if (!weeks.length && !loading) return null;
   return (
     <section className="section weekly-dashboard">
-      <div className="section-title">
+      <div className="summary-toolbar">
         <div>
-          <div className="eyebrow">Lectura semanal del mercado</div>
-          <h2>Market risers · Week {week ?? "—"}</h2>
-          <p className="subtle">
-            Primero detecta el movimiento Fantasy; después mira el contexto
-            estadístico y defensivo.
-          </p>
+          <div className="eyebrow">Summary · lectura semanal</div>
+          <h2>TE con actividad de mercado</h2>
+          <p className="subtle">Rostered 80–89% · Adds/Drops y cambios contra la semana anterior.</p>
         </div>
-      </div>
-      <div className="week-tabs weekly-week-tabs">
-        {weeks.map((item) => (
-          <button
-            className={`tab ${item.week === week ? "active" : ""}`}
-            disabled={item.locked}
-            key={item.week}
-            onClick={() => setWeek(item.week)}
-            title={item.locked ? `Semana bloqueada${item.unlocksAt ? ` · se habilita ${dateLabel(item.unlocksAt)}` : ""}` : "Semana disponible"}
-          >
-            {item.label}
-            {item.locked ? " 🔒" : ""}
-          </button>
-        ))}
+        <label className="week-select-label">
+          <span>Semana</span>
+          <select value={week ?? ""} onChange={(event) => setWeek(Number(event.target.value))}>
+            {weeks.map((item) => (
+              <option key={item.week} value={item.week} disabled={item.locked}>
+                {item.label}{item.locked ? " · bloqueada" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       {loading ? (
         <div className="empty">Cargando mercado semanal…</div>
       ) : rows.length ? (
         <>
-          <div className="panel table-wrap weekly-table">
+          <div className="panel table-wrap weekly-table summary-table">
             <table>
               <thead>
                 <tr>
-                  <th>Jugador</th>
-                  <th>Rival</th>
-                  <th>ADP move</th>
-                  <th>Net adds</th>
-                  <th>Stats recientes</th>
-                  <th>Defensa</th>
+                  <th>Player</th>
+                  <th>Opp</th>
+                  <th>Rostered %</th>
+                  <th>Rostered Change %</th>
+                  <th>Started %</th>
+                  <th>Started Change %</th>
+                  <th>Adds</th>
+                  <th>Drops</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => {
-                  const defense = row.phase2.defenseVsPosition;
-                  const defenseRank =
-                    defense?.ranks.receivingYardsAllowed ??
-                    defense?.ranks.rushingYardsAllowed ??
-                    defense?.ranks.passingYardsAllowed;
                   return (
                     <tr key={row.player.id}>
                       <td>
                         <Link
                           className="player-link"
-                          href={`/player/${row.player.id}`}
+                          href={`/player/${row.player.id}?week=${row.week}`}
                         >
                           <span className="player-cell">
                             <PlayerVisual
@@ -539,25 +506,13 @@ function WeeklyDashboardSection() {
                           </span>
                         </Link>
                       </td>
-                      <td>
-                        {row.phase2.weeklyMarket?.opponent
-                          ? `vs ${row.phase2.weeklyMarket.opponent}`
-                          : "—"}
-                      </td>
-                      <td
-                        className={tone(row.phase2.weeklyMarket?.adpMovement)}
-                      >
-                        {signed(row.phase2.weeklyMarket?.adpMovement)}
-                      </td>
-                      <td className={tone(row.phase2.weeklyMarket?.netAdds)}>
-                        {fmt(row.phase2.weeklyMarket?.netAdds)}
-                      </td>
-                      <td className="muted">{recentPrimary(row)}</td>
-                      <td>
-                        {defense && defenseRank
-                          ? `${defense.opponent} vs ${defense.position} · ${defenseRank}/${defense.rankTotal}`
-                          : "—"}
-                      </td>
+                      <td>{row.opponent ? `vs ${row.opponent}` : "—"}</td>
+                      <td>{row.rosteredPct === null ? "—" : `${row.rosteredPct.toFixed(1)}%`}</td>
+                      <td className={tone(row.rosteredChangePct)}>{row.rosteredChangePct === null ? "—" : signed(row.rosteredChangePct) + "%"}</td>
+                      <td>{row.startedPct === null ? "—" : `${row.startedPct.toFixed(1)}%`}</td>
+                      <td className={tone(row.startedChangePct)}>{row.startedChangePct === null ? "—" : signed(row.startedChangePct) + "%"}</td>
+                      <td>{fmt(row.adds)}</td>
+                      <td>{fmt(row.drops)}</td>
                     </tr>
                   );
                 })}
@@ -566,15 +521,10 @@ function WeeklyDashboardSection() {
           </div>
           <div className="weekly-cards">
             {rows.map((row) => {
-              const defense = row.phase2.defenseVsPosition;
-              const defenseRank =
-                defense?.ranks.receivingYardsAllowed ??
-                defense?.ranks.rushingYardsAllowed ??
-                defense?.ranks.passingYardsAllowed;
               return (
                 <Link
                   className="weekly-card"
-                  href={`/player/${row.player.id}`}
+                  href={`/player/${row.player.id}?week=${row.week}`}
                   key={row.player.id}
                 >
                   <div className="player-cell">
@@ -592,25 +542,11 @@ function WeeklyDashboardSection() {
                       </span>
                     </span>
                   </div>
-                  <div className="weekly-card-metrics">
-                    <span>
-                      <small>ADP</small>
-                      <strong
-                        className={tone(row.phase2.weeklyMarket?.adpMovement)}
-                      >
-                        {signed(row.phase2.weeklyMarket?.adpMovement)}
-                      </strong>
-                    </span>
-                    <span>
-                      <small>NET ADDS</small>
-                      <strong>{fmt(row.phase2.weeklyMarket?.netAdds)}</strong>
-                    </span>
-                  </div>
-                  <div className="subtle">{recentPrimary(row)}</div>
-                  <div className="subtle">
-                    {defense && defenseRank
-                      ? `${defense.opponent} vs ${defense.position} · ${defenseRank}/${defense.rankTotal}`
-                      : "Defensa sin dato"}
+                  <div className="summary-mobile-grid">
+                    <span><small>OPP</small><strong>{row.opponent ? `vs ${row.opponent}` : "—"}</strong></span>
+                    <span><small>ROSTERED</small><strong>{row.rosteredPct === null ? "—" : `${row.rosteredPct.toFixed(1)}%`}</strong></span>
+                    <span><small>STARTED Δ</small><strong className={tone(row.startedChangePct)}>{row.startedChangePct === null ? "—" : signed(row.startedChangePct) + "%"}</strong></span>
+                    <span><small>ADDS / DROPS</small><strong>{fmt(row.adds)} / {fmt(row.drops)}</strong></span>
                   </div>
                 </Link>
               );
@@ -619,7 +555,7 @@ function WeeklyDashboardSection() {
         </>
       ) : (
         <div className="empty">
-          Todavía no hay movimiento semanal observable para esta semana.
+          No hay TE con Rostered 80–89%, Adds/Drops y cambio de Started % para esta semana.
         </div>
       )}
     </section>
@@ -627,139 +563,25 @@ function WeeklyDashboardSection() {
 }
 
 export function Dashboard() {
-  const rising = useRows("/api/rising");
-  const waiversAdds = useRows("/api/waivers?window=24H&sort=adds");
-  const waiversDrops = useRows("/api/waivers?window=24H&sort=drops");
-  const waiversNet = useRows("/api/waivers?window=24H&sort=net");
-  const early = useRows("/api/early");
-  const hot = useRows("/api/hot");
-  const divergences = useRows("/api/divergences");
-  const [health, setHealth] = useState<{
-    counts: { players: number; adpSnapshots: number; waiverSnapshots: number };
-    adp: { latest: string | null; days: number };
-    waiver: { latest: string | null };
-  } | null>(null);
-  useEffect(() => {
-    getJson<typeof health>("/api/data")
-      .then(setHealth)
-      .catch(() => setHealth(null));
-  }, []);
-  const healthCards = [
-    { label: "Jugadores seguidos", value: health?.counts.players ?? "—" },
-    { label: "Snapshots ADP", value: health?.counts.adpSnapshots ?? "—" },
-    {
-      label: "Snapshots waivers",
-      value: health?.counts.waiverSnapshots ?? "—",
-    },
-    { label: "Días históricos", value: health?.adp.days ?? "—" },
-  ];
   return (
     <>
       <div className="hero">
         <div className="hero-copy">
           <div className="eyebrow">
-            Inteligencia del mercado Fantasy · señales determinísticas
+            Fantasy Market Tracker · Summary
           </div>
-          <h1>Fantasy Market Tracker</h1>
+          <h1>Mercado semanal</h1>
           <p>
-            Observa hacia dónde se mueve el mercado Fantasy NFL. El ADP muestra
-            el mercado de drafts; la actividad de Sleeper muestra los waivers.
-            Las señales se calculan únicamente con snapshots observados.
+            Una lectura por semana, sin mezclar históricos: TEs con 80–89% de
+            rostered y movimiento observado en Adds/Drops y Started %.
           </p>
         </div>
       </div>
-      <div className="grid grid-4">
-        {healthCards.map((card) => (
-          <div className="metric-card" key={card.label}>
-            <div className="metric-label">{card.label}</div>
-            <div className="metric-value">
-              {typeof card.value === "number"
-                ? card.value.toLocaleString()
-                : card.value}
-            </div>
-            <div className="metric-foot">
-              {card.label === "Snapshots ADP"
-                ? `Última actualización ${health?.adp.latest ? new Date(health.adp.latest).toLocaleDateString() : "—"}`
-                : card.label === "Snapshots waivers"
-                  ? `Última captura ${health?.waiver.latest ? new Date(health.waiver.latest).toLocaleString() : "—"}`
-                  : "Cobertura respaldada por fuentes"}
-            </div>
-          </div>
-        ))}
-      </div>
-      {health?.counts.waiverSnapshots === 0 && (
-        <div className="data-note" style={{ marginTop: 16 }}>
-          El histórico de Sleeper está vacío. La app está conectada al cliente
-          de API público, pero las gráficas de waivers se llenarán después de
-          ejecutar <code>npm run capture:waivers</code> de forma programada.
-        </div>
-      )}
       <WeeklyDashboardSection />
-      <MarketSection
-        title="Mayores subidas de ADP"
-        href="/rising"
-        rows={rising.rows}
-        loading={rising.loading}
-        mode="rising"
-      />
-      <div className="grid grid-2">
-        <MarketSection
-          title="Jugadores con más adds"
-          href="/waivers"
-          rows={waiversAdds.rows}
-          loading={waiversAdds.loading}
-          mode="waivers"
-          compact
-        />
-        <MarketSection
-          title="Jugadores con más drops"
-          href="/waivers?sort=drops"
-          rows={waiversDrops.rows}
-          loading={waiversDrops.loading}
-          mode="waivers"
-          compact
-        />
-      </div>
-      <div className="grid grid-2">
-        <MarketSection
-          title="Mayores net adds"
-          href="/waivers"
-          rows={waiversNet.rows}
-          loading={waiversNet.loading}
-          mode="waivers"
-          compact
-        />
-        <MarketSection
-          title="Waivers acelerando más rápido"
-          href="/hot"
-          rows={hot.rows}
-          loading={hot.loading}
-          mode="score"
-          compact
-        />
-      </div>
-      <div className="grid grid-2">
-        <MarketSection
-          title="Señales tempranas"
-          href="/early"
-          rows={early.rows}
-          loading={early.loading}
-          mode="score"
-          compact
-        />
-        <MarketSection
-          title="Divergencias"
-          href="/divergences"
-          rows={divergences.rows}
-          loading={divergences.loading}
-          mode="position"
-          compact
-        />
-      </div>
       <div className="footer-note">
-        Todos los valores de Sleeper son observaciones de ventanas móviles. Los
-        deltas entre snapshots son cambios en la ventana reportada, no conteos
-        exactos de nuevas transacciones.
+        La tabla muestra únicamente la semana seleccionada. Las variaciones de
+        Rostered/Started son diferencias de snapshots semanales; Adds/Drops son
+        el último snapshot 24H disponible de esa semana.
       </div>
     </>
   );

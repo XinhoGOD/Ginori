@@ -262,6 +262,65 @@ h3 {
 .section-title p {
   margin: 0;
 }
+.summary-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+.summary-toolbar h2 {
+  margin: 5px 0 6px;
+}
+.week-select-label {
+  display: grid;
+  gap: 7px;
+  min-width: 180px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.week-select-label select {
+  appearance: none;
+  border: 1px solid #33445d;
+  border-radius: 8px;
+  background: #121b2a;
+  color: var(--text);
+  padding: 11px 35px 11px 12px;
+  cursor: pointer;
+}
+.summary-table table {
+  min-width: 940px;
+}
+.summary-table th,
+.summary-table td {
+  text-align: right;
+}
+.summary-table th:first-child,
+.summary-table td:first-child,
+.summary-table th:nth-child(2),
+.summary-table td:nth-child(2) {
+  text-align: left;
+}
+.summary-mobile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.summary-mobile-grid span {
+  display: grid;
+  gap: 4px;
+}
+.summary-mobile-grid small {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+.summary-mobile-grid strong {
+  font-size: 15px;
+}
 .table-wrap {
   overflow-x: auto;
 }
@@ -840,6 +899,14 @@ tr:hover td {
   }
   .panel {
     padding: 15px;
+  }
+  .summary-toolbar {
+    display: grid;
+    gap: 16px;
+    align-items: start;
+  }
+  .week-select-label {
+    width: 100%;
   }
   .weekly-table {
     display: none;
