@@ -1,4 +1,4 @@
-name: Capture Sleeper waiver snapshots
+name: Capture live fantasy market snapshots
 
 on:
   schedule:
@@ -19,10 +19,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run capture:waivers
+      - run: npm run capture:fantasy-ownership
       - name: Commit snapshot files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/silver/waiver_snapshots.parquet data/silver/sleeper_players.parquet data/silver/unmatched_sleeper_players.json
+          git add data/silver/waiver_snapshots.parquet data/silver/sleeper_players.parquet data/silver/unmatched_sleeper_players.json data/silver/fantasy_ownership_snapshots.parquet
           git diff --cached --quiet || git commit -m "chore: capture Sleeper waiver snapshot"
           git push

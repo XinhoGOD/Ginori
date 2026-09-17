@@ -31,9 +31,12 @@ El dashboard `Summary` es deliberadamente de una sola semana: muestra únicament
 
 ```bash
 npm run capture:fantasy-ownership
+npm run capture:adp
 ```
 
 La captura conserva la respuesta cruda en `data/bronze/fantasy-ownership/` y agrega `data/silver/fantasy_ownership_snapshots.parquet`. ESPN sí entrega ambos porcentajes en su contexto global de Fantasy; el repositorio ADP original y nflverse no los incluyen.
+
+`npm run capture:adp` reutiliza las configuraciones de los tres clientes del repositorio de referencia: ESPN `kona_player_info`, Sleeper `projections/nfl/regular` y Yahoo `pub-api-ro .../draft_analysis`. Actualiza el ADP del día y reemplaza únicamente la partición de la fecha actual, conservando el histórico anterior. `npm run capture:market` ejecuta en secuencia waivers, ownership y ADP para una actualización manual completa.
 
 ## Sleeper capture
 
