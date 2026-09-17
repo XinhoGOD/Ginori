@@ -446,8 +446,8 @@ function WeeklyDashboardSection() {
     <section className="section weekly-dashboard">
       <div className="summary-toolbar">
         <div>
-          <div className="eyebrow">Summary · lectura semanal</div>
-          <h2>TE con actividad de mercado</h2>
+          <div className="eyebrow">Fantasy Market Tracker · Mercado semanal</div>
+          <h2>TEs con movimiento</h2>
           <p className="subtle">Rostered 80–89% · Adds/Drops y cambios contra la semana anterior.</p>
         </div>
         <label className="week-select-label">
@@ -565,18 +565,6 @@ function WeeklyDashboardSection() {
 export function Dashboard() {
   return (
     <>
-      <div className="hero">
-        <div className="hero-copy">
-          <div className="eyebrow">
-            Fantasy Market Tracker · Summary
-          </div>
-          <h1>Mercado semanal</h1>
-          <p>
-            Una lectura por semana, sin mezclar históricos: TEs con 80–89% de
-            rostered y movimiento observado en Adds/Drops y Started %.
-          </p>
-        </div>
-      </div>
       <WeeklyDashboardSection />
       <div className="footer-note">
         La tabla muestra únicamente la semana seleccionada. Las variaciones de

@@ -58,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
         <nav className="nav">
           {[
-            ["/", "Summary"],
+            ["/", "Mercado"],
             ["/rising", "Subiendo"],
             ["/waivers", "Waivers"],
             ["/hot", "Calientes"],
