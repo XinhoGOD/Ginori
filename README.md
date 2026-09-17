@@ -34,7 +34,7 @@ npm run capture:waivers
 npm run validate:waivers
 ```
 
-The command requests the public adds and drops endpoints for 24H, 72H and 168H, saves the raw response under `data/bronze/sleeper/`, and appends an idempotent snapshot to `data/silver/waiver_snapshots.parquet`. Timestamps are UTC. A new run never replaces prior captures; the uniqueness key is `captured_at + player_id + lookback_hours`.
+The command requests the public adds and drops endpoints for 24H, 72H and 168H, saves the raw response under `data/bronze/sleeper/`, and appends an idempotent snapshot to `data/silver/waiver_snapshots.parquet`. Timestamps are UTC. A new run never replaces prior captures; the uniqueness key is `captured_at + player_id + lookback_hours`. Los raw se preservan localmente; el repositorio de despliegue sólo versiona los Parquet procesados para evitar objetos demasiado grandes.
 
 `npm run validate:waivers` comprueba cobertura de jugadores en la última captura, jugadores no listados/parciales, equipos todavía no resueltos y claves duplicadas.
 
